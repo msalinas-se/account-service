@@ -1,0 +1,246 @@
+openapi: 3.0.3
+info:
+  title: Account Service
+  version: 1.0.0
+servers:
+  - url: http://localhost:8082
+paths:
+  /accounts:
+    get:
+      summary: List accounts
+      parameters:
+        - name: customerId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Account'
+    post:
+      summary: Create account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '400':
+          description: Bad request
+  /accounts/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      summary: Get account
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '404':
+          description: Not found
+    put:
+      summary: Update account holders and signers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                holders:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/AccountHolder'
+                authorizedSigners:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/AccountHolder'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '404':
+          description: Not found
+    delete:
+      summary: Delete account
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          description: Not found
+  /accounts/{id}/balance:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      summary: Get account balance
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accountId:
+                    type: string
+                  accountNumber:
+                    type: string
+                  balance:
+                    type: number
+  /accounts/{id}/deposits:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      summary: Deposit
+      requestBody:
+        $ref: '#/components/requestBodies/Amount'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Movement'
+        '400':
+          description: Bad request
+  /accounts/{id}/withdrawals:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      summary: Withdrawal
+      requestBody:
+        $ref: '#/components/requestBodies/Amount'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Movement'
+        '400':
+          description: Bad request
+  /accounts/{id}/movements:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      summary: List account movements
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Movement'
+components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+  requestBodies:
+    Amount:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [amount]
+            properties:
+              amount:
+                type: number
+  schemas:
+    AccountHolder:
+      type: object
+      properties:
+        documentNumber:
+          type: string
+        fullName:
+          type: string
+    AccountRequest:
+      type: object
+      required: [customerId, type]
+      properties:
+        customerId:
+          type: string
+        type:
+          type: string
+          enum: [SAVINGS, CHECKING, FIXED_TERM]
+        holders:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountHolder'
+        authorizedSigners:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountHolder'
+    Account:
+      type: object
+      properties:
+        id:
+          type: string
+        accountNumber:
+          type: string
+        customerId:
+          type: string
+        customerType:
+          type: string
+          enum: [PERSONAL, BUSINESS]
+        type:
+          type: string
+          enum: [SAVINGS, CHECKING, FIXED_TERM]
+        balance:
+          type: number
+        maintenanceFee:
+          type: number
+        monthlyMovementLimit:
+          type: integer
+        movementDay:
+          type: integer
+        holders:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountHolder'
+        authorizedSigners:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountHolder'
+    Movement:
+      type: object
+      properties:
+        id:
+          type: string
+        accountId:
+          type: string
+        type:
+          type: string
+          enum: [DEPOSIT, WITHDRAWAL]
+        amount:
+          type: number
+        balance:
+          type: number
+        date:
+          type: string
+          format: date-time

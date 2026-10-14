@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: account-service
+  cloud:
+    config:
+      enabled: false
+
+services:
+  customer:
+    url: http://localhost:8081
