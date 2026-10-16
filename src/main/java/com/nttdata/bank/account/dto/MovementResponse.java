@@ -6,5 +6,5 @@ import java.time.LocalDateTime;
 
 /** Movement representation returned by the API. */
 public record MovementResponse(String id, String accountId, MovementType type, BigDecimal amount,
-    BigDecimal balance, LocalDateTime date) {
+    BigDecimal fee, BigDecimal balance, LocalDateTime date) {
 }

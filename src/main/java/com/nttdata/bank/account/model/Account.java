@@ -26,6 +26,9 @@ public class Account {
   private BigDecimal maintenanceFee;
   private Integer monthlyMovementLimit;
   private Integer movementDay;
+  private Integer freeTransactions;
+  private BigDecimal transactionFee;
+  private BigDecimal minimumDailyAverage;
   private List<AccountHolder> holders;
   private List<AccountHolder> authorizedSigners;
 }

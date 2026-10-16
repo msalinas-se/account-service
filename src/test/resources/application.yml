@@ -8,3 +8,12 @@ spring:
 services:
   customer:
     url: http://localhost:8081
+  credit:
+    url: http://localhost:8083
+
+circuit-breaker:
+  timeout: 2s
+
+eureka:
+  client:
+    enabled: false

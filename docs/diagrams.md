@@ -12,6 +12,14 @@ classDiagram
   AccountServiceImpl --> CustomerClient
   MovementServiceImpl --> AccountRepository
   MovementServiceImpl --> MovementRepository
+  AccountServiceImpl --> ProfileRuleFactory
+  ProfileRuleFactory --> ProfileRule
+  StandardProfileRule ..|> ProfileRule
+  VipProfileRule ..|> ProfileRule
+  PymeProfileRule ..|> ProfileRule
+  VipProfileRule --> CreditClient
+  PymeProfileRule --> CreditClient
+  ReportServiceImpl --> MovementRepository
   Account "1" --> "*" Movement
   class Account {
     String id
@@ -43,7 +51,11 @@ sequenceDiagram
   AccountController->>AccountServiceImpl: create(request)
   AccountServiceImpl->>customer-service: GET /customers/{id}
   customer-service-->>AccountServiceImpl: cliente
-  AccountServiceImpl->>AccountServiceImpl: validar reglas por tipo de cliente
+  AccountServiceImpl->>AccountServiceImpl: validar reglas por tipo de cliente y monto de apertura
+  AccountServiceImpl->>ProfileRule: validate() segun perfil (VIP / PYME)
+  opt VIP ahorro o PYME corriente
+    ProfileRule->>credit-service: GET /credit-cards?customerId=
+  end
   alt regla no cumplida
     AccountServiceImpl-->>Postman: 400
   else
@@ -59,8 +71,27 @@ sequenceDiagram
   Postman->>MovementController: POST /accounts/{id}/deposits
   MovementController->>MovementServiceImpl: deposit(id, request)
   MovementServiceImpl->>AccountRepository: findById(id)
-  MovementServiceImpl->>MovementRepository: countByAccountIdAndDateBetween()
+  MovementServiceImpl->>MovementRepository: countByAccountIdAndTypeInAndDateBetween()
+  MovementServiceImpl->>MovementServiceImpl: cobrar comision si supera transacciones gratis
   MovementServiceImpl->>AccountRepository: save(account)
   MovementServiceImpl->>MovementRepository: save(movement)
   MovementServiceImpl-->>Postman: 201 Created
+```
+
+## Secuencia: transferencia
+
+```mermaid
+sequenceDiagram
+  Postman->>TransferController: POST /accounts/transfers
+  TransferController->>MovementServiceImpl: transfer(request)
+  MovementServiceImpl->>AccountRepository: findById(origen) y findById(destino)
+  alt saldo insuficiente
+    MovementServiceImpl-->>Postman: 400 INSUFFICIENT_FUNDS
+  else
+    MovementServiceImpl->>AccountRepository: save(destino)
+    MovementServiceImpl->>MovementRepository: save(TRANSFER_IN)
+    MovementServiceImpl->>AccountRepository: save(origen)
+    MovementServiceImpl->>MovementRepository: save(TRANSFER_OUT)
+    MovementServiceImpl-->>Postman: 201 Created
+  end
 ```

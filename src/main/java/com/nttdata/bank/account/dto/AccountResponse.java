@@ -17,6 +17,9 @@ public record AccountResponse(
     BigDecimal maintenanceFee,
     Integer monthlyMovementLimit,
     Integer movementDay,
+    Integer freeTransactions,
+    BigDecimal transactionFee,
+    BigDecimal minimumDailyAverage,
     List<AccountHolder> holders,
     List<AccountHolder> authorizedSigners) {
 }

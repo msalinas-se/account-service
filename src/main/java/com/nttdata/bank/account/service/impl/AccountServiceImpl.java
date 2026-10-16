@@ -16,6 +16,8 @@ import com.nttdata.bank.account.model.AccountType;
 import com.nttdata.bank.account.model.CustomerType;
 import com.nttdata.bank.account.repository.AccountRepository;
 import com.nttdata.bank.account.repository.MovementRepository;
+import com.nttdata.bank.account.rule.ProfileRule;
+import com.nttdata.bank.account.rule.ProfileRuleFactory;
 import com.nttdata.bank.account.service.AccountService;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Flowable;
@@ -37,13 +39,22 @@ public class AccountServiceImpl implements AccountService {
   private final CustomerClient customerClient;
   private final AccountProperties accountProperties;
   private final AccountMapper accountMapper;
+  private final ProfileRuleFactory profileRuleFactory;
 
   /** Opens a new account. */
   @Override
   public Single<AccountResponse> create(AccountRequest request) {
     return customerClient.findById(request.customerId())
-        .flatMap(customer -> validate(customer, request)
-            .andThen(Single.defer(() -> accountRepository.save(newAccount(customer, request)))))
+        .flatMap(customer -> {
+          ProfileRule profileRule = profileRuleFactory.get(customer.profile());
+          return validate(customer, request)
+              .andThen(Completable.defer(() -> profileRule.validate(customer, request)))
+              .andThen(Single.defer(() -> {
+                Account account = newAccount(customer, request);
+                profileRule.apply(account);
+                return accountRepository.save(account);
+              }));
+        })
         .doOnSuccess(account -> log.info("Account created: {}", account.getAccountNumber()))
         .map(accountMapper::toResponse);
   }
@@ -95,6 +106,11 @@ public class AccountServiceImpl implements AccountService {
   }
 
   private Completable validate(CustomerDto customer, AccountRequest request) {
+    BigDecimal minimum = accountProperties.products().get(request.type()).minimumOpeningAmount();
+    if (minimum != null && request.openingAmountOrZero().compareTo(minimum) < 0) {
+      return Completable.error(new BusinessRuleException("MINIMUM_OPENING_AMOUNT",
+          "The minimum opening amount for " + request.type() + " is " + minimum));
+    }
     if (customer.type() == CustomerType.BUSINESS) {
       if (request.type() != AccountType.CHECKING) {
         return Completable.error(new BusinessRuleException("ACCOUNT_TYPE_NOT_ALLOWED",
@@ -125,10 +141,12 @@ public class AccountServiceImpl implements AccountService {
         .customerId(customer.id())
         .customerType(customer.type())
         .type(request.type())
-        .balance(BigDecimal.ZERO)
+        .balance(request.openingAmountOrZero())
         .maintenanceFee(rule.maintenanceFee())
         .monthlyMovementLimit(rule.monthlyMovementLimit())
         .movementDay(rule.movementDay())
+        .freeTransactions(rule.freeTransactions())
+        .transactionFee(rule.transactionFee())
         .holders(business
             ? request.holders()
             : List.of(new AccountHolder(customer.documentNumber(), customer.name())))

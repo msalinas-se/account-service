@@ -21,6 +21,7 @@ public class Movement {
   private String accountId;
   private MovementType type;
   private BigDecimal amount;
+  private BigDecimal fee;
   private BigDecimal balance;
   private LocalDateTime date;
 }

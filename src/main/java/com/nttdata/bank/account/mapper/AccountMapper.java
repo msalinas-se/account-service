@@ -16,17 +16,18 @@ public class AccountMapper {
     return new AccountResponse(account.getId(), account.getAccountNumber(),
         account.getCustomerId(), account.getCustomerType(), account.getType(),
         account.getBalance(), account.getMaintenanceFee(), account.getMonthlyMovementLimit(),
-        account.getMovementDay(), account.getHolders(), account.getAuthorizedSigners());
-  }
-
-  /** Builds the balance of an account. */
-  public BalanceResponse toBalance(Account account) {
-    return new BalanceResponse(account.getId(), account.getAccountNumber(), account.getBalance());
+        account.getMovementDay(), account.getFreeTransactions(), account.getTransactionFee(),
+        account.getMinimumDailyAverage(), account.getHolders(), account.getAuthorizedSigners());
   }
 
   /** Builds the API representation of a movement. */
   public MovementResponse toResponse(Movement movement) {
     return new MovementResponse(movement.getId(), movement.getAccountId(), movement.getType(),
-        movement.getAmount(), movement.getBalance(), movement.getDate());
+        movement.getAmount(), movement.getFee(), movement.getBalance(), movement.getDate());
+  }
+
+  /** Builds the balance of an account. */
+  public BalanceResponse toBalance(Account account) {
+    return new BalanceResponse(account.getId(), account.getAccountNumber(), account.getBalance());
   }
 }

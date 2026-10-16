@@ -8,12 +8,22 @@ Microservicio que maneja los productos pasivos (cuentas bancarias) del banco.
 
 Un cliente puede hacer depósitos y retiros de sus cuentas bancarias.
 
+- Las cuentas bancarias tienen un monto mínimo de apertura que puede ser cero (0).
+- VIP: cuenta de ahorro que requiere un monto mínimo de promedio diario cada mes y tener una tarjeta de crédito con el banco.
+- PYME: cuenta corriente sin comisión de mantenimiento, requiere tener una tarjeta de crédito con el banco.
+- Todas las cuentas tienen un número máximo de transacciones sin comisión, superado ese número se cobra comisión por cada transacción.
+- Transferencias entre cuentas del mismo cliente y cuentas a terceros del mismo banco.
+- Reporte general por producto en un intervalo de tiempo y reporte de los últimos 10 movimientos.
+
 ## Tecnologías
 
 - Java 17
 - Spring Boot
+- Spring Cloud (Config, Eureka, Resilience4j)
 - RxJava
 - Maven
 - MongoDB
 - Lombok
 - Logback
+- JUnit, Mockito y JaCoCo
+- Docker

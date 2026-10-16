@@ -4,12 +4,20 @@ import com.nttdata.bank.account.model.AccountHolder;
 import com.nttdata.bank.account.model.AccountType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
+import java.math.BigDecimal;
 import java.util.List;
 
 /** Payload used to open an account. */
 public record AccountRequest(
     @NotBlank String customerId,
     @NotNull AccountType type,
+    @PositiveOrZero BigDecimal openingAmount,
     List<AccountHolder> holders,
     List<AccountHolder> authorizedSigners) {
+
+  /** Opening amount, zero when it is not sent. */
+  public BigDecimal openingAmountOrZero() {
+    return openingAmount == null ? BigDecimal.ZERO : openingAmount;
+  }
 }
