@@ -17,3 +17,10 @@ circuit-breaker:
 eureka:
   client:
     enabled: false
+
+topics:
+  debt-status: debt-status
+  wallet-link: wallet-link
+  wallet-link-result: wallet-link-result
+  wallet-payment: wallet-payment
+  wallet-payment-result: wallet-payment-result

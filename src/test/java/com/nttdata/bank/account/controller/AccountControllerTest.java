@@ -16,7 +16,10 @@ import com.nttdata.bank.account.exception.BusinessRuleException;
 import com.nttdata.bank.account.exception.ResourceNotFoundException;
 import com.nttdata.bank.account.exception.ServiceUnavailableException;
 import com.nttdata.bank.account.model.AccountType;
+import com.nttdata.bank.account.dto.DebitCardRequest;
+import com.nttdata.bank.account.model.DebitCard;
 import com.nttdata.bank.account.service.AccountService;
+import com.nttdata.bank.account.service.DebitCardService;
 import com.nttdata.bank.account.service.MovementService;
 import com.nttdata.bank.account.service.ReportService;
 import io.reactivex.rxjava3.core.Completable;
@@ -32,7 +35,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 @WebFluxTest({AccountController.class, MovementController.class, TransferController.class,
-    ReportController.class})
+    ReportController.class, DebitCardController.class})
 class AccountControllerTest {
 
   @Autowired
@@ -46,6 +49,9 @@ class AccountControllerTest {
 
   @MockBean
   private ReportService reportService;
+
+  @MockBean
+  private DebitCardService debitCardService;
 
   private final AccountResponse account = new AccountResponse("a1", "123", "1", null,
       AccountType.SAVINGS, BigDecimal.TEN, BigDecimal.ZERO, 20, null, 10, BigDecimal.ONE, null,
@@ -102,6 +108,35 @@ class AccountControllerTest {
         .expectStatus().isOk()
         .expectBody().jsonPath("$.SAVINGS.totalMovements").isEqualTo(1);
     webTestClient.get().uri("/accounts/a1/movements/last").exchange().expectStatus().isOk();
+  }
+
+  @Test
+  void debitCardEndpoints() {
+    when(debitCardService.create(any(DebitCardRequest.class)))
+        .thenReturn(Single.just(new DebitCard()));
+    when(debitCardService.findAll(null)).thenReturn(Flowable.just(new DebitCard()));
+    when(debitCardService.findById("d1")).thenReturn(Single.just(new DebitCard()));
+    when(debitCardService.update(eq("d1"), any(DebitCardRequest.class)))
+        .thenReturn(Single.just(new DebitCard()));
+    when(debitCardService.delete("d1")).thenReturn(Completable.complete());
+    when(debitCardService.pay(eq("d1"), any(MovementRequest.class)))
+        .thenReturn(Single.just(movement));
+    when(debitCardService.getBalance("d1"))
+        .thenReturn(Single.just(new BalanceResponse("a1", "123", BigDecimal.TEN)));
+    when(debitCardService.lastMovements("d1")).thenReturn(Flowable.just(movement));
+    Map<String, Object> card = Map.of("customerId", "1", "mainAccountId", "a1");
+
+    webTestClient.post().uri("/debit-cards").bodyValue(card).exchange()
+        .expectStatus().isCreated();
+    webTestClient.get().uri("/debit-cards").exchange().expectStatus().isOk();
+    webTestClient.get().uri("/debit-cards/d1").exchange().expectStatus().isOk();
+    webTestClient.put().uri("/debit-cards/d1").bodyValue(card).exchange().expectStatus().isOk();
+    webTestClient.delete().uri("/debit-cards/d1").exchange().expectStatus().isNoContent();
+    webTestClient.post().uri("/debit-cards/d1/payments").bodyValue(Map.of("amount", 10))
+        .exchange().expectStatus().isCreated();
+    webTestClient.get().uri("/debit-cards/d1/balance").exchange().expectStatus().isOk();
+    webTestClient.get().uri("/debit-cards/d1/movements/last").exchange()
+        .expectStatus().isOk();
   }
 
   @Test

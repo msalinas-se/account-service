@@ -95,3 +95,36 @@ sequenceDiagram
     MovementServiceImpl-->>Postman: 201 Created
   end
 ```
+
+## Secuencia: pago con tarjeta de débito
+
+```mermaid
+sequenceDiagram
+  Postman->>DebitCardController: POST /debit-cards/{id}/payments
+  DebitCardController->>DebitCardServiceImpl: pay(id, request)
+  DebitCardServiceImpl->>DebitCardRepository: findById(id)
+  loop cuenta principal y luego las asociadas en orden
+    DebitCardServiceImpl->>AccountRepository: findById(cuenta)
+  end
+  alt ninguna cuenta tiene saldo
+    DebitCardServiceImpl-->>Postman: 400 INSUFFICIENT_FUNDS
+  else
+    DebitCardServiceImpl->>AccountRepository: save(cuenta)
+    DebitCardServiceImpl->>MovementRepository: save(DEBIT_CARD_PAYMENT)
+    DebitCardServiceImpl-->>Postman: 201 Created
+  end
+```
+
+## Secuencia: eventos de Kafka
+
+```mermaid
+sequenceDiagram
+  credit-service->>Kafka: debt-status
+  Kafka->>EventListener: debt-status
+  EventListener->>CustomerDebtRepository: save(estado de deuda)
+  yanki-service->>Kafka: wallet-link / wallet-payment
+  Kafka->>EventListener: wallet-link / wallet-payment
+  EventListener->>WalletServiceImpl: link() / pay()
+  WalletServiceImpl->>AccountRepository: actualizar cuenta principal
+  EventListener->>Kafka: wallet-link-result / wallet-payment-result
+```

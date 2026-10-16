@@ -14,6 +14,8 @@ Un cliente puede hacer depósitos y retiros de sus cuentas bancarias.
 - Todas las cuentas tienen un número máximo de transacciones sin comisión, superado ese número se cobra comisión por cada transacción.
 - Transferencias entre cuentas del mismo cliente y cuentas a terceros del mismo banco.
 - Reporte general por producto en un intervalo de tiempo y reporte de los últimos 10 movimientos.
+- Tarjetas de débito asociadas a las cuentas bancarias para hacer pagos.
+- Un cliente no podrá adquirir un producto si posee alguna deuda vencida en algún producto de crédito.
 
 ## Tecnologías
 
@@ -21,6 +23,7 @@ Un cliente puede hacer depósitos y retiros de sus cuentas bancarias.
 - Spring Boot
 - Spring Cloud (Config, Eureka, Resilience4j)
 - RxJava
+- Kafka
 - Maven
 - MongoDB
 - Lombok

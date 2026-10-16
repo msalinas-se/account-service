@@ -232,6 +232,105 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Movement'
+  /debit-cards:
+    get:
+      summary: List debit cards
+      parameters:
+        - name: customerId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DebitCard'
+    post:
+      summary: Create debit card
+      requestBody:
+        $ref: '#/components/requestBodies/DebitCard'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebitCard'
+        '400':
+          description: Bad request
+  /debit-cards/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      summary: Get debit card
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebitCard'
+        '404':
+          description: Not found
+    put:
+      summary: Update debit card accounts
+      requestBody:
+        $ref: '#/components/requestBodies/DebitCard'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebitCard'
+    delete:
+      summary: Delete debit card
+      responses:
+        '204':
+          description: Deleted
+  /debit-cards/{id}/payments:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      summary: Pay with debit card (main account first, then the others in order)
+      requestBody:
+        $ref: '#/components/requestBodies/Amount'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Movement'
+        '400':
+          description: Bad request
+  /debit-cards/{id}/balance:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      summary: Balance of the main account
+      responses:
+        '200':
+          description: OK
+  /debit-cards/{id}/movements/last:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      summary: Last 10 movements of the debit card
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Movement'
 components:
   parameters:
     Id:
@@ -241,6 +340,22 @@ components:
       schema:
         type: string
   requestBodies:
+    DebitCard:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [customerId, mainAccountId]
+            properties:
+              customerId:
+                type: string
+              mainAccountId:
+                type: string
+              accountIds:
+                type: array
+                items:
+                  type: string
     Amount:
       required: true
       content:
@@ -324,7 +439,7 @@ components:
           type: string
         type:
           type: string
-          enum: [DEPOSIT, WITHDRAWAL, TRANSFER_IN, TRANSFER_OUT]
+          enum: [DEPOSIT, WITHDRAWAL, TRANSFER_IN, TRANSFER_OUT, DEBIT_CARD_PAYMENT, WALLET_IN, WALLET_OUT]
         amount:
           type: number
         fee:
@@ -334,3 +449,18 @@ components:
         date:
           type: string
           format: date-time
+    DebitCard:
+      type: object
+      properties:
+        id:
+          type: string
+        cardNumber:
+          type: string
+        customerId:
+          type: string
+        mainAccountId:
+          type: string
+        accountIds:
+          type: array
+          items:
+            type: string

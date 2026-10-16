@@ -1,6 +1,7 @@
 package com.nttdata.bank.account.service;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.nttdata.bank.account.client.CreditClient;
@@ -18,7 +19,9 @@ import com.nttdata.bank.account.model.AccountHolder;
 import com.nttdata.bank.account.model.AccountType;
 import com.nttdata.bank.account.model.CustomerProfile;
 import com.nttdata.bank.account.model.CustomerType;
+import com.nttdata.bank.account.model.CustomerDebt;
 import com.nttdata.bank.account.repository.AccountRepository;
+import com.nttdata.bank.account.repository.CustomerDebtRepository;
 import com.nttdata.bank.account.repository.MovementRepository;
 import com.nttdata.bank.account.rule.ProfileRuleFactory;
 import com.nttdata.bank.account.rule.PymeProfileRule;
@@ -53,6 +56,9 @@ class AccountServiceImplTest {
   @Mock
   private CreditClient creditClient;
 
+  @Mock
+  private CustomerDebtRepository customerDebtRepository;
+
   private AccountServiceImpl accountService;
 
   private final CustomerDto personal =
@@ -77,7 +83,13 @@ class AccountServiceImplTest {
     ProfileRuleFactory factory = new ProfileRuleFactory(List.of(new StandardProfileRule(),
         new VipProfileRule(creditClient, properties), new PymeProfileRule(creditClient)));
     accountService = new AccountServiceImpl(accountRepository, movementRepository,
-        customerClient, properties, new AccountMapper(), factory);
+        customerClient, properties, new AccountMapper(), factory, customerDebtRepository);
+  }
+
+  @BeforeEach
+  void noDebts() {
+    lenient().when(customerDebtRepository.findById(any(String.class)))
+        .thenReturn(Maybe.empty());
   }
 
   private void saveReturnsArgument() {
@@ -214,6 +226,29 @@ class AccountServiceImplTest {
     accountService.create(new AccountRequest("2", AccountType.CHECKING, new BigDecimal("100"),
             holders, null)).test()
         .assertError(BusinessRuleException.class);
+  }
+
+  @Test
+  void customerWithOverdueDebtCannotOpenAccount() {
+    when(customerClient.findById("1")).thenReturn(Single.just(personal));
+    when(customerDebtRepository.findById("1"))
+        .thenReturn(Maybe.just(new CustomerDebt("1", true)));
+
+    accountService.create(new AccountRequest("1", AccountType.SAVINGS, null, null, null)).test()
+        .assertError(BusinessRuleException.class);
+  }
+
+  @Test
+  void customerWithPaidDebtCanOpenAccount() {
+    when(customerClient.findById("1")).thenReturn(Single.just(personal));
+    when(customerDebtRepository.findById("1"))
+        .thenReturn(Maybe.just(new CustomerDebt("1", false)));
+    when(accountRepository.countByCustomerIdAndType("1", AccountType.SAVINGS))
+        .thenReturn(Single.just(0L));
+    saveReturnsArgument();
+
+    accountService.create(new AccountRequest("1", AccountType.SAVINGS, null, null, null)).test()
+        .assertComplete();
   }
 
   @Test

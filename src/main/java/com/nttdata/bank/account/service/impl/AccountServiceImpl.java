@@ -15,6 +15,7 @@ import com.nttdata.bank.account.model.AccountHolder;
 import com.nttdata.bank.account.model.AccountType;
 import com.nttdata.bank.account.model.CustomerType;
 import com.nttdata.bank.account.repository.AccountRepository;
+import com.nttdata.bank.account.repository.CustomerDebtRepository;
 import com.nttdata.bank.account.repository.MovementRepository;
 import com.nttdata.bank.account.rule.ProfileRule;
 import com.nttdata.bank.account.rule.ProfileRuleFactory;
@@ -40,6 +41,7 @@ public class AccountServiceImpl implements AccountService {
   private final AccountProperties accountProperties;
   private final AccountMapper accountMapper;
   private final ProfileRuleFactory profileRuleFactory;
+  private final CustomerDebtRepository customerDebtRepository;
 
   /** Opens a new account. */
   @Override
@@ -47,7 +49,8 @@ public class AccountServiceImpl implements AccountService {
     return customerClient.findById(request.customerId())
         .flatMap(customer -> {
           ProfileRule profileRule = profileRuleFactory.get(customer.profile());
-          return validate(customer, request)
+          return validateNoOverdueDebt(customer.id())
+              .andThen(Completable.defer(() -> validate(customer, request)))
               .andThen(Completable.defer(() -> profileRule.validate(customer, request)))
               .andThen(Single.defer(() -> {
                 Account account = newAccount(customer, request);
@@ -103,6 +106,16 @@ public class AccountServiceImpl implements AccountService {
   @Override
   public Single<BalanceResponse> getBalance(String id) {
     return findAccount(id).map(accountMapper::toBalance);
+  }
+
+  private Completable validateNoOverdueDebt(String customerId) {
+    return customerDebtRepository.findById(customerId)
+        .filter(debt -> debt.isOverdue())
+        .isEmpty()
+        .flatMapCompletable(noDebt -> noDebt
+            ? Completable.complete()
+            : Completable.error(new BusinessRuleException("OVERDUE_DEBT",
+                "The customer has an overdue debt in a credit product")));
   }
 
   private Completable validate(CustomerDto customer, AccountRequest request) {
