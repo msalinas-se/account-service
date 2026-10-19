@@ -136,6 +136,7 @@ public class DebitCardServiceImpl implements DebitCardService {
         .map(accountMapper::toResponse);
   }
 
+  /** Returns the account ids with the main account first and no duplicates. */
   private List<String> orderedAccounts(DebitCardRequest request) {
     return Stream.concat(Stream.of(request.mainAccountId()),
             Optional.ofNullable(request.accountIds()).orElse(List.of()).stream())
@@ -143,6 +144,7 @@ public class DebitCardServiceImpl implements DebitCardService {
         .toList();
   }
 
+  /** Fails if the customer has an overdue debt. */
   private Completable validateNoOverdueDebt(String customerId) {
     return customerDebtRepository.findById(customerId)
         .filter(debt -> debt.isOverdue())
@@ -153,6 +155,7 @@ public class DebitCardServiceImpl implements DebitCardService {
                 "The customer has an overdue debt in a credit product")));
   }
 
+  /** Validates that all the accounts exist and belong to the customer. */
   private Completable validateAccounts(String customerId, List<String> accountIds) {
     return Flowable.fromIterable(accountIds)
         .concatMapSingle(accountId -> accountRepository.findById(accountId)

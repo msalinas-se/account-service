@@ -108,6 +108,7 @@ public class AccountServiceImpl implements AccountService {
     return findAccount(id).map(accountMapper::toBalance);
   }
 
+  /** Fails if the customer has an overdue debt. */
   private Completable validateNoOverdueDebt(String customerId) {
     return customerDebtRepository.findById(customerId)
         .filter(debt -> debt.isOverdue())
@@ -118,6 +119,7 @@ public class AccountServiceImpl implements AccountService {
                 "The customer has an overdue debt in a credit product")));
   }
 
+  /** Validates the opening amount and the account rules of the customer type. */
   private Completable validate(CustomerDto customer, AccountRequest request) {
     BigDecimal minimum = accountProperties.products().get(request.type()).minimumOpeningAmount();
     if (minimum != null && request.openingAmountOrZero().compareTo(minimum) < 0) {
@@ -145,6 +147,7 @@ public class AccountServiceImpl implements AccountService {
             : Completable.complete());
   }
 
+  /** Builds the account with the conditions of its product. */
   private Account newAccount(CustomerDto customer, AccountRequest request) {
     AccountProperties.ProductRule rule = accountProperties.products().get(request.type());
     boolean business = customer.type() == CustomerType.BUSINESS;
@@ -169,6 +172,7 @@ public class AccountServiceImpl implements AccountService {
         .build();
   }
 
+  /** Finds an account or fails if it does not exist. */
   private Single<Account> findAccount(String id) {
     return accountRepository.findById(id)
         .switchIfEmpty(Single.error(new ResourceNotFoundException("Account not found: " + id)));

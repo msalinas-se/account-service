@@ -57,6 +57,7 @@ public class WalletServiceImpl implements WalletService {
     }).flatMap(single -> single);
   }
 
+  /** Finds the main account of a debit card, empty when there is no card. */
   private Single<Optional<Account>> mainAccount(String cardNumber) {
     if (cardNumber == null) {
       return Single.just(Optional.empty());
@@ -67,6 +68,7 @@ public class WalletServiceImpl implements WalletService {
         .defaultIfEmpty(Optional.empty());
   }
 
+  /** Adds the amount to the account and registers the movement. */
   private Single<Boolean> apply(Optional<Account> account, BigDecimal amount, MovementType type) {
     if (account.isEmpty()) {
       return Single.just(true);
@@ -85,6 +87,7 @@ public class WalletServiceImpl implements WalletService {
         .map(movement -> true);
   }
 
+  /** Builds the result of a wallet payment. */
   private WalletPaymentResultEvent result(WalletPaymentEvent event, boolean success,
       String reason) {
     log.info("Wallet payment {} processed: {}", event.paymentId(), success);

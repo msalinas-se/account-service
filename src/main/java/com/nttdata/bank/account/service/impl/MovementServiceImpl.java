@@ -83,6 +83,7 @@ public class MovementServiceImpl implements MovementService {
         .map(accountMapper::toResponse);
   }
 
+  /** Registers a deposit or a withdrawal on an account. */
   private Single<MovementResponse> register(String accountId, MovementType type,
       BigDecimal amount) {
     return findAccount(accountId)
@@ -91,6 +92,7 @@ public class MovementServiceImpl implements MovementService {
         .map(accountMapper::toResponse);
   }
 
+  /** Applies the account rules, the commission and the new balance. */
   private Single<Movement> process(Account account, MovementType type, BigDecimal amount) {
     LocalDate today = LocalDate.now();
     if (account.getMovementDay() != null && today.getDayOfMonth() != account.getMovementDay()) {
@@ -122,6 +124,7 @@ public class MovementServiceImpl implements MovementService {
         });
   }
 
+  /** Saves a movement of an account. */
   private Single<Movement> save(Account account, MovementType type, BigDecimal amount,
       BigDecimal fee) {
     return movementRepository.save(Movement.builder()
@@ -134,6 +137,7 @@ public class MovementServiceImpl implements MovementService {
         .build());
   }
 
+  /** Finds an account or fails if it does not exist. */
   private Single<Account> findAccount(String id) {
     return accountRepository.findById(id)
         .switchIfEmpty(Single.error(new ResourceNotFoundException("Account not found: " + id)));

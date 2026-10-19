@@ -48,6 +48,7 @@ public class ReportServiceImpl implements ReportService {
         .map(accountMapper::toResponse);
   }
 
+  /** Builds the report of the movements of one product. */
   private ProductReport toReport(List<Movement> movements) {
     long accounts = movements.stream().map(Movement::getAccountId).distinct().count();
     var totals = movements.stream()
